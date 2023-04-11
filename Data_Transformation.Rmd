@@ -155,7 +155,7 @@ ggplot(data = delay, mapping = aes(x = dist, y = delay)) +
 ```
 
 <br>
-É possível fazer esse código mais limpo e mais legível, com o pipe "%>%".
+E também é possível fazer esse código mais limpo e mais legível, com o pipe "%>%".
 ```{r}
 #De uma só vez criamos o grupo, sumarizamos os dados e aplicamos o filtro.
 #Tudo é feito em cadeia, começando pela escolha da base de dados.
