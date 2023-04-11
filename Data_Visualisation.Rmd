@@ -1,0 +1,101 @@
+---
+title: "Data_Visualisation"
+author: "Alexandre Grenfell"
+date: "2023-04-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Scatter Plot
+São gráficos que ajudam a analisar a relação entre variáveis.  
+Geralmente colocamos no eixo y a variável que queremos medir em relação ao eixo x.
+
+**Gráfico Simples**
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point()
+```
+
+<br>
+Inserir um novo campo como um level no dado, ajuda a interpretar melhor.  
+O campo class como cor.
+```{r}
+# Cor
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy, color = class)) + 
+  geom_point()
+```
+<br>Usar o "?geom_point" pode ajudar a configurar melhor a visualização.
+
+<br>
+Outra forma interessante de analisar os dados é criar "facets", que são como camadas com novos gráficos, separando conforme um level específico.
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_wrap(~ class, nrow = 2)
+```
+<br>Ou com mais de um level.
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(drv ~ cyl)
+```
+
+## Gráfico Smooth
+Esse grafico também é bom para ver a relação entre dua variáveis.  
+Quanto maior a sombra (intervalo de confiança), maior é a incerteza dos dados naquele ponto.  
+
+Para analisar a relação entre duas variáveis temos uma variável dependente (y), e uma independente (x). Em visualizações que usam regressão entre as duas variáveis geralmente a fórmula é "y ~ x", ou seja, y em função de x.
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_smooth()
+```
+
+Podemos criar umm gráfico com mais de uma linha suavizada.
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy, linetype = drv)) + 
+  geom_smooth()
+```
+
+Ou podemos mesclar mais de um tipo de gráficos.
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_smooth() +
+  geom_point()
+```
+
+Pode alterar os levels do gráfico de forma geral para todos, ou se passar argumentos individualmente.
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point(mapping = aes(color = class)) + 
+  geom_smooth()
+```
+
+## Gráficos de Barra
+Gráficos de barra mostrar a contagem de ocorrência em cada categoria da variável escolhida.
+```{r}
+ggplot(data = diamonds, mapping = aes(x = cut)) + 
+  geom_bar()
+```
+
+Porém tem como deixar o gráficco de barra mais atrativo para análise.
+```{r}
+ggplot(data = diamonds, mapping = aes(x = cut)) + 
+  geom_bar(mapping = aes(fill = clarity))
+```
+
+Ou fazendo a análise em um gráfico 100%, ou individal para cada categoria.
+```{r}
+#100%
+ggplot(data = diamonds, mapping = aes(x = cut)) + 
+  geom_bar(mapping = aes(fill = clarity), position = "fill")
+
+#Individual para cada Categoria
+ggplot(data = diamonds, mapping = aes(x = cut)) + 
+  geom_bar(mapping = aes(fill = clarity), position = "dodge")
+```
+
