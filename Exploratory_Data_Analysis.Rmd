@@ -1,0 +1,301 @@
+---
+title: "Exploratory_Data_Analysis"
+author: "Alexandre Grenfell"
+date: "2023-04-13"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Variação
+
+É a tendência do valor de uma variável mudar entre cada medição.
+
+#### Distribuição
+
+Variáveis categóricas só conseguimos olhar a distribuição pela contagem
+do total de valores em cada categoria.
+
+```{r}
+ggplot(data = diamonds) +
+  geom_bar(mapping = aes(x = cut))
+```
+
+Também é possível gerar uma tabela com esses valores.
+
+```{r}
+diamonds %>% 
+  count(cut)
+```
+
+Para variáveis contínuas, temos várias medidas de distribuição.\
+Por exemplo, podemos gerar um histograma.
+
+```{r}
+ggplot(data = diamonds) +
+  geom_histogram(mapping = aes(x = carat), binwidth = 0.5)
+```
+
+E para gerar uma tabela.
+
+```{r}
+diamonds %>% 
+  count(cut_width(carat, 0.5))
+```
+
+O histograma divide o eixo-x em compartimentos iguais, e avalia a
+quantidade de valores em cada compartimento. O argumento *binwidth*
+indica o tamanho desses compartimentos.
+
+Outra ferramenta muit útil é a função *geom_freqpoly()*, que tem a mesma
+função do histograma, porém é possível avaliar mais de uma classe de
+dados.
+
+```{r}
+smaller <- diamonds %>% 
+  filter(carat < 3)
+
+ggplot(data = smaller, mapping = aes(x = carat, colour = cut)) +
+  geom_freqpoly(binwidth = 0.1)
+```
+
+#### Valores Típicos
+
+Em um histograma ou gráfico de barra, a barra maior indica os valores
+mais comuns, e a barra menor os menos comuns.
+
+-   Quais eram as expectativas quanto aos dados?
+
+-   Quais são os dados mais comuns? Porque?
+
+-   Quais são os menos comuns? Porque?
+
+-   Existem padrões?
+
+Outra ferramenta boa é clusterizar os dados em subgrupos e entender a
+relação entre eles.
+
+-   Como os valres de um mesmo cluster são similares entre eles?
+
+-   Como os valors de clusters separados são diferente entre eles?
+
+-   Como podemos descrever ou explicar um cluster?
+
+#### Valores Atípicos
+
+Olhando um gráfico de histograma, muitas vezes não conseguimos enxergar
+os outliers, devido ao tamanho da amotra.
+
+```{r}
+ggplot(diamonds) + 
+  geom_histogram(mapping = aes(x = y), binwidth = 0.5)
+```
+
+No gráfico acima, vemos muitos dados entre 0 e 20, mas não vemos nada de
+20 até 60. Porém como esses compartimentos sem valores aparecem no
+gráfico, isso indica que existe algum valor dentro deles, porém pequeno
+demais para ser visto. Então precisamos dar um zoom nos dados. Uma forma
+é limitar o eixo y.
+
+```{r}
+ggplot(diamonds) + 
+  geom_histogram(mapping = aes(x = y), binwidth = 0.5) +
+  coord_cartesian(ylim = c(0, 50))
+```
+
+Vemos agora que temos valores em 0, \~30 e \~60. Então filtramos eles
+para entender melhor o que ocorreu.
+
+```{r}
+diamonds %>% 
+  filter(y < 3 | y > 20) %>% 
+  select(price, x, y, z) %>%
+  arrange(y)
+```
+
+A variável y mostra uma das 3 dimensões de um diamante, em milimetros. É
+impossível um diamante ter tamanho 0mm, então entendemos que esse valor
+é erro de entrada. Na outra ponta, valores muito altos indicam diamantes
+muito grandes, porém vemos que o preço deles não são muito maiores, o
+que indica outro erro de entrada.
+
+É importante analizar a base com e sem os outliers, para verificar como
+isso impacta a amostra. Se for muito impactante, não podemos
+simplesmente descartar. Precisamos primeiro entender os motivos do
+outlier e então justificar porque estamos removendo da base.
+
+#### Missing Value
+
+Após identificarmos os outliers, se quisermos tirar da análise, temos
+duas formas.
+
+1.  Simplesmente retirar da amostra.
+
+```{r}
+diamonds2 <- diamonds %>% 
+  filter(between(y, 3, 20))
+```
+
+2.  Porém a melhor forma é configurando o valor como *missing value*.
+    Podemos usar a função *mutate()* com a função *ifelse(teste lógico,
+    valor se verdadeiro, valor se falso)*.
+
+```{r}
+diamonds2 <- diamonds %>% 
+  mutate(y = ifelse(y < 3 | y > 20, NA, y))
+```
+
+## Covariação
+
+Covariação é a tendencia dos valores de duas ou mais variáveis variarem
+juntas de maneira relacionada. É a relação entre duas variáveis.
+
+#### Variáveis Categóricas e Contínuas
+
+Para avaliar a correlação entre duas variáveis, quebrando elas entre
+variáveis categóricas, podemos usar o *geom_freqpoly()*, conforme
+falamos anteriormente.
+
+```{r}
+ggplot(data = diamonds, mapping = aes(x = price)) + 
+  geom_freqpoly(mapping = aes(colour = cut), binwidth = 500)
+```
+
+Porém as configurações padrões dessa função não ajudam muito na
+visualização das informações, pois ela usa a contagem de valores para
+montar a frequência, o que significa que classes com mais valores irão
+aparecer mais que as classes com menos valores, o que pode distorcer a
+visualização.
+
+Para corrigir isso, podemos usar o argumento *density* para o eixo y,
+que é a padronização para que a área de polígono de frequencia seja
+igual a 1.
+
+```{r}
+ggplot(data = diamonds, mapping = aes(x = price, y = ..density..)) + 
+  geom_freqpoly(mapping = aes(colour = cut), binwidth = 500)
+```
+
+Outra forma, que é até melhor para visualisar, é plotar um
+***boxplot***.
+
+```{r}
+ggplot(data = diamonds, mapping = aes(x = cut, y = price)) +
+  geom_boxplot()
+```
+
+No exemplo acima a variável categórica tem uma ordem a ser seguida (é um
+*factor*). Porém muitas vezes as variáveis categóricas não terão uma
+ordem exata. Para isso podemos usar a função *reorder()*. Essa função
+cria uma ordem conforme um parâmetro escolhido.
+
+```{r}
+#Uma variável categórica sem ordem, e sem usar a função reorder()
+ggplot(data = mpg, mapping = aes(x = class, y = hwy)) +
+  geom_boxplot()
+
+#A mesma variável categórica sem ordem, agora usando a função reorder(), reordenando pela mediana.
+ggplot(data = mpg) +
+  geom_boxplot(mapping = aes(x = reorder(class, hwy, FUN = median), y = hwy))
+```
+
+#### Duas Variáveis Categóricas
+
+Para ver a relação entre duas variáveis categóricas, preciamos contar o
+número de observações entre cada combinação. O tamanho do ponto indica a
+quantidade de observações.
+
+```{r}
+ggplot(data = diamonds) +
+  geom_count(mapping = aes(x = cut, y = color))
+```
+
+Também podemos usar o mapa de calor, em que a escala de cor indica a
+quantidade de observações.
+
+```{r}
+diamonds %>% 
+  count(color, cut) %>%  
+  ggplot(mapping = aes(x = color, y = cut)) +
+    geom_tile(mapping = aes(fill = n))
+```
+
+#### Duas Variáveis Contínuas
+
+Para variáveis continuas, uma ótima forma é usar o *scatterplot*, em que
+a forma que os pontos se apresentam, pode indicar o padrão com que as
+variáveis se relacionam. Porém quanto maior o tamanho da base de dados,
+mais difícil fica a visualização.
+
+```{r}
+ggplot(data = diamonds) +
+  geom_point(mapping = aes(x = carat, y = price))
+```
+
+Uma solução para esse problema é dividir o eixo x em compartimentos.
+Para isso temos as funções ***geom_bin2d()*** e a função
+***geom_hex()***, que precisa do pacote *hexbin*.
+
+```{r}
+ggplot(data = smaller) +
+  geom_bin2d(mapping = aes(x = carat, y = price))
+
+library(hexbin)
+ggplot(data = smaller) +
+  geom_hex(mapping = aes(x = carat, y = price))
+```
+
+Ou então podemos criar um compartimento dentro de funções como a do
+boxplot, usando o argumento *group = cut_width(x, width)*. Ele pega a
+variável do eixo x e divide ela em compartimentos com o tamanho *width*.
+
+```{r}
+ggplot(data = smaller, mapping = aes(x = carat, y = price)) + 
+  geom_boxplot(mapping = aes(group = cut_width(carat, 0.1)))
+```
+
+#### Padrões e Modelos
+
+Padrões nos dados dão pistas sobre o relacionamento entre as variáveis.
+Quando identificar um padrão, pergunte-se:
+
+-   É coincidência (aleatório)?
+
+-   Como posso descrever a relação implícita entre as variáveis?
+
+-   Quão forte é essa relação implíicita?
+
+-   Quais outras variáveis podem afetar esse relacionamento?
+
+O scatterplot abaixo, mostra uma relação positiva entre o tempo entre as
+erupções do Old Faithful, e a duração da erupção. Ou seka, quanto mais
+tempo entre as erupções, maior o tempo de erupção.
+
+```{r}
+ggplot(data = faithful) + 
+  geom_point(mapping = aes(x = eruptions, y = waiting))
+```
+
+Identificar padrões é uma ferramente importante, pois ajuda a
+identificar a covariação entre as variáveis. Podemos usar a covariação
+para inferir sobre a variável **x** com a ajuda da variável **y**.
+
+Modelos são ferramentas que ajudar a extrair esses padrões dos dados.
+
+Abaixo temos um modelo que prediz o preço do diamante conforme o
+quilate, e então calcula os residuais (diferença entre o valor real e o
+previsto).
+
+Analisando os residuais, ou seja, retirando a forte relação enter preço
+e quilate, observamos que quanto maior a qualidade, maior o preço.
+
+```{r}
+ggplot(data = diamonds2) + 
+  geom_boxplot(mapping = aes(x = cut, y = resid))
+```
